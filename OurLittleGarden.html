@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine Gift</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background-color: rgba(220, 213, 188, 255);
+            background: url('orange_grass.png') repeat;
+            background-size: 30%;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #flowerButton {
+            width: 300px;
+            height: 300px;
+            cursor: pointer;
+            border: none;
+            position: relative;
+            background: url('cat_cottage.gif') no-repeat center center;
+            background-size: cover;
+        }
+
+        .flower {
+            display: none;
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            z-index: 1;
+            user-select: none;
+            transition: transform 0.3s;
+        }
+
+        #flowerIdBox {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ffecce;
+            /*border-image: url('textbox_mid.png') no-repeat center center;
+            background-size: 150% auto;*/
+            padding: 10px;
+            border: 5px ridge;
+            border-color: #fdad98;
+            border-radius: 15px;
+            display: none;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        #inputBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: beige;
+            border: 3px solid orange;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 4;
+            display: none;
+            text-align: center;
+            max-width: 200px;
+            width: 100%;
+            height: 70px;
+        }
+
+        #inputText {
+            width: calc(100% - 20px);
+            padding: 10px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 30px;
+        }
+
+        #submitButton {
+            /*width: calc(100% - 20px);*/
+            width: 50px;
+            height: 30px;
+            padding: 5px;
+            border: 1px solid orange;
+            background-color: beige;
+            color: orange;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 7px;
+            position: absolute;
+            bottom: 5px;
+            left: 33%;
+            transform: translateX(-50%);
+        }
+
+        #submitButton:hover {
+            transition: 0.5s;
+            background-color: orange;
+            color: beige;
+        }
+
+        .cancelButton {
+            width: 50px;
+            height: 30px;
+            padding: 5px;
+            border: 1px solid red;
+            background-color: lightcoral;
+            color: white;
+            cursor: pointer;
+            /*font-family: cursive;*/
+            font-size: 16px;
+            border-radius: 7px;
+            position: absolute;
+            bottom: 5px;
+            left: 66%;
+            transform: translateX(-50%);
+        }
+
+        .cancelButton:hover {
+            transition: 0.5s;
+            background-color: red;
+        }
+
+    </style>
+</head>
+
+<body>
+    <button id="flowerButton" onclick="generateFlower()"></button>
+    <div id="flowerContainer"></div>
+    <div id="flowerIdBox"></div>
+    <div id="inputBox"></div>
+
+    <script>
+        const flowerArray = [];
+
+        const flowerImages = ['lily.png', 'butc.png', 'tulip.png', 'rose.png', 'chamo.png'];
+        const deadFlowers = [];
+
+        const button_rect = flowerButton.getBoundingClientRect();
+        const top_x = button_rect.left + window.scrollX;
+        const top_y = button_rect.top + window.scrollY;
+        const bot_x = button_rect.right + window.scrollX;
+        const bot_y = button_rect.bottom + window.scrollY;
+        console.log("top left : ()",top_x,",",top_y,")\nbottom right : (",bot_x,",",bot_y,")");
+
+        function showBox(element) {
+            const inputBox = document.getElementById('inputBox');
+            const flowerRect = element.getBoundingClientRect();
+
+            // Check if the flower is within the specified coordinates
+            if (
+                flowerRect.left >= top_x &&
+                flowerRect.right <= bot_x &&
+                flowerRect.top >= top_y &&
+                flowerRect.bottom <= bot_y
+            ) {
+                showInputBox(element);
+            } else {
+                hideInputBox();
+            }
+        }
+
+        function generateFlower() {
+            const newFlower = document.createElement('img');
+            newFlower.className = 'flower';
+            newFlower.setAttribute('data-flower-id', flowerArray.length+1);
+            newFlower.setAttribute('data-message', 'I am a flower');
+            newFlower.draggable = true;
+
+            const randomImageIndex = Math.floor(Math.random() * flowerImages.length);
+            newFlower.src = flowerImages[randomImageIndex];
+
+            let flowerTop, flowerLeft;
+
+            do {
+                flowerTop = Math.round(Math.random() * (window.innerHeight - 50));
+                flowerLeft = Math.round(Math.random() * (window.innerWidth - 50));
+            } while (isOverlapping(newFlower, flowerTop, flowerLeft));
+
+            newFlower.style.top = `${flowerTop}px`;
+            newFlower.style.left = `${flowerLeft}px`;
+            makeDraggable(newFlower);
+
+            document.body.appendChild(newFlower);
+            document.getElementsByClassName('flower')[flowerArray.length].style.display = 'block';
+
+            flowerArray.push({
+                id: newFlower.getAttribute('data-flower-id'),
+                image: flowerImages[randomImageIndex],
+                position: { top: flowerTop, left: flowerLeft },
+                message: newFlower.getAttribute('data-message'),
+            });
+            console.log(flowerArray);
+        }
+
+        function isOverlapping(newFlower, top, left) {
+            const newFlowerRect = newFlower.getBoundingClientRect();
+            const flowers = document.querySelectorAll('.flower');
+            const buttonRect = document.getElementById('flowerButton').getBoundingClientRect();
+
+            // Check if new flower is overlapping with the flower generator button
+            if (
+                top < buttonRect.bottom &&
+                top + newFlowerRect.height > buttonRect.top &&
+                left < buttonRect.right &&
+                left + newFlowerRect.width > buttonRect.left
+            ) {
+                return true;
+            }
+
+            // Check if new flower is overlapping with existing flowers
+            for (const flower of flowers) {
+                const flowerRect = flower.getBoundingClientRect();
+                if (
+                    top < flowerRect.bottom &&
+                    top + newFlowerRect.height > flowerRect.top &&
+                    left < flowerRect.right &&
+                    left + newFlowerRect.width > flowerRect.left
+                ) {
+                    return true; // Overlapping
+                }
+            }
+
+            return false; // Not overlapping
+        }
+
+        function makeDraggable(element) {
+            let isClicked = false;
+
+            element.addEventListener('mousedown', (e) => {
+                isClicked = !isClicked;
+                if (isClicked) {
+                    document.addEventListener('mousemove', dragElement);
+                    element.style.cursor = 'move';
+                    element.parentElement.style.zIndex = 2;
+                } else {
+                    document.removeEventListener('mousemove', dragElement);
+                    element.style.cursor = 'auto';
+                    element.parentElement.style.zIndex = 1;
+                    element.style.transform = 'scale(1)';
+                }
+            });
+
+            element.addEventListener('mouseenter', () => {
+                if (!isClicked) {
+                    element.style.transform = 'scale(1.2)';
+                    showFlowerInfo(element);
+                }
+            });
+
+            element.addEventListener('mouseleave', () => {
+                if (!isClicked) {
+                    element.style.transform = 'scale(1)';
+                    hideFlowerInfo();
+                    showBox(element);
+                    const ind = flowerArray.findIndex(i => i.id === element.getAttribute('data-flower-id'));
+                    console.log('id :',element.getAttribute('data-flower-id'),', type :',typeof(element.getAttribute('data-flower-id')),'\nindex :', ind,'\nflower', flowerArray[ind]);
+                    flowerArray[ind].position = { top: element.style.top, left: element.style.left };
+                    console.log(flowerArray);
+                }
+            });
+
+            function dragElement(e) {
+                const offsetX = element.offsetWidth / 2;
+                const offsetY = element.offsetHeight / 2;
+
+                const x = e.clientX - offsetX;
+                const y = e.clientY - offsetY;
+
+                element.style.left = `${x}px`;
+                element.style.top = `${y}px`;
+                element.style.transform = 'scale(1.2)';
+
+                hideFlowerInfo();
+            }
+
+            element.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text', element.id);
+                hideInputBox();
+            });
+        }
+
+        function showFlowerInfo(element) {
+            const flowerIdBox = document.getElementById('flowerIdBox');
+            const flowerId = element.getAttribute('data-flower-id');
+            const message = element.getAttribute('data-message');
+            const image = element.src.split('/').pop();
+            const imageName = image.slice(0,-4);
+
+            const fMessage = message.replace(/\n/g, '<br>');
+            flowerIdBox.innerHTML = `${fMessage}`
+            flowerIdBox.style.display = 'block';
+        }
+
+        function hideFlowerInfo() {
+            const flowerIdBox = document.getElementById('flowerIdBox');
+            flowerIdBox.style.display = 'none';
+        }
+
+        function confirmDelete(callback) {
+            // Generate random alphanumeric
+            function randomString(length, chars) {
+                var result = '';
+                for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+                return result;
+            }
+            const rString = randomString(5, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+            // Ask the user to confirm deletion by typing alphanumeric
+            const label = document.createElement('div');
+            label.textContent = 'Enter the verification : ' + rString;
+            label.className = 'label';
+            label.style.userSelect = 'none';
+            const inputBox = document.getElementById('inputBox');
+            inputBox.innerHTML = '';
+            label.style.fontSize = '12px';
+
+            const inputText = document.createElement('input');
+            inputText.type = 'text';
+            inputText.addEventListener('focus', () => inputText.select());
+
+            const submitButton = document.createElement('button');
+            submitButton.textContent = 'Yes';
+            submitButton.id = 'submitButton';
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'No';
+            cancelButton.className = 'cancelButton';
+
+            submitButton.addEventListener('click', () => {
+                const message = inputText.value;
+                if (message == rString) {
+                    // If the entered alphanumeric matches, invoke the callback with true
+                    callback(true);
+                } else {
+                    // If not, invoke the callback with false
+                    callback(false);
+                }
+            });
+
+            inputText.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    submitButton.click();
+                }
+            });
+
+            cancelButton.addEventListener('click', () => {
+                // If the user clicks Cancel, invoke the callback with false
+                callback(false);
+            });
+
+            inputBox.appendChild(label);
+            inputBox.appendChild(inputText);
+            inputBox.appendChild(submitButton);
+            inputBox.appendChild(cancelButton);
+            inputBox.style.display = 'block';
+        }
+
+        function showInputBox(element) {
+            const inputBox = document.getElementById('inputBox');
+            inputBox.innerHTML = '';
+
+            const inputText = document.createElement('textarea');
+            inputText.type = 'text';
+            inputText.rows = 2;
+            inputText.value = element.getAttribute('data-message');
+            inputText.addEventListener('focus', () => inputText.select());
+
+            // Submit button init
+            const submitButton = document.createElement('button');
+            submitButton.textContent = 'Ok!';
+            submitButton.id = 'submitButton';
+
+            // Cancel button init
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'X';
+            cancelButton.className = 'cancelButton';
+
+            inputText.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.shiftKey) {
+
+                    // Insert a newline when Shift+Enter is pressed
+                    const currentValue = inputText.value;
+                    const selectionStart = inputText.selectionStart;
+                    const selectionEnd = inputText.selectionEnd;
+
+                    const newValue =
+                        currentValue.substring(0, selectionStart) +
+                        '\n' +
+                        currentValue.substring(selectionEnd);
+
+                    inputText.value = newValue;
+
+                    // Move the cursor to the position after the inserted newline
+                    const newPosition = selectionStart + 1;
+                    inputText.setSelectionRange(newPosition, newPosition);
+
+                    e.preventDefault(); // Prevent default behavior of Enter key
+                }
+            });
+
+            // Event listener for the cancel button
+            cancelButton.addEventListener('click', () => {
+                // Use confirmDelete with a callback
+                confirmDelete((confirmed) => {
+                    if (confirmed) {
+                        const flowId = element.getAttribute('data-flower-id');
+                        const flowIn = flowerArray.findIndex(flower => flower.id == flowId);
+
+                        if (flowIn !== -1) {
+                            // Remove the flower from the array
+                            flowerArray.splice(flowIn, 1);
+
+                            // Remove the flower element from the DOM
+                            document.body.removeChild(element);
+                        }
+
+                        hideInputBox();
+                        hideFlowerInfo();
+                        console.log(flowerArray);
+                    } else {
+                        console.log('Cancelled');
+                        showInputBox(element);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', () => {
+                const message = inputText.value;
+                element.setAttribute('data-message', message);
+                hideInputBox();
+                hideFlowerInfo();
+                const ind = flowerArray.findIndex(i => i.id === element.getAttribute('data-flower-id'));
+                flowerArray[ind].message = message;
+                console.log(flowerArray);
+            });
+
+            inputText.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    // Pressing Enter without Shift key submits the form
+                    e.preventDefault();
+                    submitButton.click();
+                }
+            });
+
+            inputBox.appendChild(inputText);
+            inputBox.appendChild(submitButton);
+            inputBox.appendChild(cancelButton);
+            inputBox.style.display = 'block';
+        }
+
+        function hideInputBox() {
+            const inputBox = document.getElementById('inputBox');
+            inputBox.style.display = 'none';
+        }
+
+        function displayFlowers() {
+            const flowerContainer = document.getElementById('flowerContainer');
+            flowerContainer.innerHTML = '';
+
+            for (const flower of flowerArray) {
+                const newFlower = document.createElement('img');
+                newFlower.className = 'flower';
+                newFlower.setAttribute('data-flower-id', flower.id);
+                newFlower.setAttribute('data-message', flower.message);
+                newFlower.draggable = true;
+                newFlower.src = flower.image;
+
+                newFlower.style.top = flower.position.top;
+                newFlower.style.left = flower.position.left;
+                console.log(flower.position.top, flower.position.left);
+                makeDraggable(newFlower);
+
+                document.body.appendChild(newFlower);
+                newFlower.style.display = 'block';
+            }
+        }
+
+    </script>
+</body>
+</html>
